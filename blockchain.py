@@ -9,35 +9,41 @@ Created on Sat Mar 27 22:08:19 2021
 import datetime
 import hashlib
 import json
+import requests
+from urllib.parse import urlparse
 
 
 # Building the block chain
-
-def hash(block):
-    # Change the chain to a string
-    encoded_block = json.dumps(block, sort_keys=True).encode()
-    # Hash the block
-    return hashlib.sha256(encoded_block).hexdigest()
 
 
 class Blockchain:
 
     def __init__(self):
         self.chain = []
+        self.transactions = []
         self.create_block(proof=1, previous_hash='0')
+        self.nodes = set()
 
     def create_block(self, proof, previous_hash):
         block = {
             'index': len(self.chain) + 1,
             'timestamp': str(datetime.datetime.now()),
             'proof': proof,
-            'previous_hash': previous_hash
+            'previous_hash': previous_hash,
+            'transactions': self.transactions
         }
+        self.transactions = []
         self.chain.append(block)
         return block
 
     def get_previous_block(self):
         return self.chain[-1]
+
+    def hash(self, block):
+        # Change the chain to a string
+        encoded_block = json.dumps(block, sort_keys=True).encode()
+        # Hash the block
+        return hashlib.sha256(encoded_block).hexdigest()
 
     def proof_of_work(self, previous_proof):
         new_proof = 1
@@ -74,3 +80,40 @@ class Blockchain:
             previous_block = current_block
             block_index += 1
         return True
+
+    # Transactions handlers
+    def add_transaction(self, sender, receiver, amount):
+        self.transactions.append({
+            'sender': sender,
+            'receiver': receiver,
+            'amount': amount
+        })
+        prev_block = self.get_previous_block()
+        return prev_block['index'] + 1
+
+    # Consensus implementation. -> Fundamental principle.
+    def add_node(self, address):
+        # 1. Parse the node address 2. Send the node to the node list.
+        parsed_url = urlparse(address)
+        self.nodes.add(parsed_url.netloc)
+
+    # Consensus problem
+    def replace_chain(self):
+        network = self.nodes
+        # Find the longest chain
+        longest_chain = None
+        max_length_of_chain = len(self.chain)
+
+        # Loop thru all the nodes in the network
+        for node in network:
+            resp = requests.get(f'http://{node}/chain')
+            if resp.status_code == 200:
+                chain_length = resp.json()['length']
+                chain = resp.json()['chain']
+                if chain_length > max_length_of_chain and self.is_chain_valid(chain):
+                    max_length_of_chain = chain_length
+                    longest_chain = chain
+        if longest_chain:
+            self.chain = longest_chain
+            return True
+        return False
