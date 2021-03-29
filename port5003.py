@@ -26,7 +26,7 @@ def mine_block():
     previous_block = blockchain.get_previous_block()
     previous_proof = previous_block['proof']
     proof = blockchain.proof_of_work(previous_proof)
-    previous_hash = hash(previous_block)
+    previous_hash = blockchain.hash(previous_block)
     blockchain.add_transaction(sender= node_address, receiver= 'Maunda Alex', amount=1)
     block = blockchain.create_block(proof, previous_hash)
     response = {
@@ -43,7 +43,10 @@ def mine_block():
 # get full block chain
 @app.route('/chain', methods=['GET'])
 def get_chain():
+    #update the chain here.
+    is_chain_replaced = blockchain.replace_chain()
     response = {
+        'is_chain_replaced': is_chain_replaced,
         'chain': blockchain.chain,
         'length': len(blockchain.chain)
     }

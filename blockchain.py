@@ -21,7 +21,7 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.transactions = []
-        self.create_block(proof=1, previous_hash='0')
+        self.create_block(proof=1, previous_hash='0') #This is the genesis block
         self.nodes = set()
 
     def create_block(self, proof, previous_hash):
@@ -50,7 +50,10 @@ class Blockchain:
         check_proof = False
 
         while check_proof is False:
-            hash_operation = hashlib.sha256(str(new_proof ** 2 - previous_proof ** 2).encode()).hexdigest()
+            hash_operation = hashlib.sha256(
+                    str(new_proof ** 2 - previous_proof ** 2).encode()
+            ).hexdigest()
+            
             if hash_operation[:4] == '0000':
                 check_proof = True
             else:
@@ -66,7 +69,7 @@ class Blockchain:
             current_block = chain[block_index]
 
             # Check the validity of the chain
-            if current_block['previous_hash'] != hash(previous_block):
+            if current_block['previous_hash'] != self.hash(previous_block):
                 return False
 
             # Check the validity of the proof of work
